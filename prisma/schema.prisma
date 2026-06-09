@@ -1,0 +1,109 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ユーザー情報
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  emailVerified DateTime?
+  image         String?   // ソーシャルアカウントのアイコン
+  provider      String?   // "github", "google", "apple" (NextAuth連携や独自識別のための任意フィールド)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth用リレーション
+  accounts      Account[]
+  sessions      Session[]
+  
+  // プロダクト・いいねリレーション
+  posts         Post[]    // ユーザーが投稿したプロダクト
+  likes         Like[]    // ユーザーが押したいいね
+}
+
+// NextAuth用アカウント情報
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+// NextAuth用セッション情報
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// NextAuth用検証トークン
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// プロダクト投稿情報
+model Post {
+  id          String   @id @default(uuid())
+  title       String
+  url         String
+  description String
+  githubUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // AI関連
+  usesAI      Boolean  @default(false)
+  aiModels    String[] // ["Gemini 3 Pro", "Claude 3.5 Sonnet"]
+  aiTools     String[] // ["Cursor", "Roo Code"]
+
+  // リレーション
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  techTags    TechTag[] // 多対多のリレーション
+  likes       Like[]
+}
+
+// 技術タグ（表記揺れ防止のためのマスター化）
+model TechTag {
+  id    String @id @default(uuid())
+  name  String @unique // "React", "PostgreSQL"
+  posts Post[]
+}
+
+// いいね管理（重複防止用）
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId]) // 1人1投稿に対して1回まで
+}
