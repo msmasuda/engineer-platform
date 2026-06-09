@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { postSchema, type PostInput } from "@/lib/schemas/post";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { recordLikeInRedis, recordUnlikeInRedis } from "@/lib/ranking";
 
 export interface CreatePostResponse {
   success: boolean;
@@ -70,4 +71,88 @@ export async function createPost(input: PostInput): Promise<CreatePostResponse> 
   // キャッシュを更新してトップページへリダイレクト
   revalidatePath("/");
   redirect("/");
+}
+
+export interface ToggleLikeResponse {
+  success: boolean;
+  liked?: boolean;
+  likeCount?: number;
+  message?: string;
+}
+
+/**
+ * プロダクトに対するいいねの作成・削除を切り替えます。
+ */
+export async function toggleLike(postId: string): Promise<ToggleLikeResponse> {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return {
+      success: false,
+      message: "サインインが必要です。",
+    };
+  }
+
+  const userId = session.user.id;
+
+  try {
+    // すでにいいねしているか確認
+    const existingLike = await db.like.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+
+    let liked = false;
+
+    if (existingLike) {
+      // いいね解除
+      await db.like.delete({
+        where: {
+          userId_postId: {
+            userId,
+            postId,
+          },
+        },
+      });
+      // Redisの更新
+      await recordUnlikeInRedis(postId);
+      liked = false;
+    } else {
+      // いいね登録
+      await db.like.create({
+        data: {
+          userId,
+          postId,
+        },
+      });
+      // Redisの更新
+      await recordLikeInRedis(postId);
+      liked = true;
+    }
+
+    // 最新のいいね数をカウント
+    const likeCount = await db.like.count({
+      where: { postId },
+    });
+
+    // パスの再検証をしてUIを更新
+    revalidatePath("/");
+    revalidatePath(`/posts/${postId}`);
+
+    return {
+      success: true,
+      liked,
+      likeCount,
+    };
+  } catch (error) {
+    console.error("Failed to toggle like:", error);
+    return {
+      success: false,
+      message: "いいねの処理中にエラーが発生しました。",
+    };
+  }
 }
