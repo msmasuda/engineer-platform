@@ -143,6 +143,22 @@ export default function FeedTabs({ allPosts, userPosts, currentUserId }: FeedTab
                   {post.description}
                 </p>
 
+                {/* AI活用詳細 (LLM, Tool) */}
+                {post.usesAI && (post.aiModels.length > 0 || post.aiTools.length > 0) && (
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-emerald-400 bg-emerald-950/20 border border-emerald-900/30 rounded-xl px-3 py-1.5 w-fit">
+                    {post.aiModels.length > 0 && (
+                      <div>
+                        <span className="font-semibold text-emerald-500">LLM:</span> {post.aiModels.join(", ")}
+                      </div>
+                    )}
+                    {post.aiTools.length > 0 && (
+                      <div>
+                        <span className="font-semibold text-emerald-500">Tool:</span> {post.aiTools.join(", ")}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* フッター: 技術タグ & 外部リンク */}
                 <div className="flex justify-between items-center gap-4 mt-5 pt-4 border-t border-white/5">
                   {/* 技術タグ */}
