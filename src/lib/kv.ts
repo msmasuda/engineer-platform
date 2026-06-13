@@ -1,7 +1,16 @@
 import { kv as vercelKv } from '@vercel/kv';
 import Redis from 'ioredis';
 
-let kv: any = vercelKv;
+export interface CustomKV {
+  zincrby(key: string, increment: number, member: string): Promise<number | null>;
+  expire(key: string, seconds: number): Promise<number>;
+  zrem(key: string, member: string): Promise<number>;
+  zrange<T = any>(key: string, min: number | string, max: number | string, options?: { rev?: boolean }): Promise<T>;
+  zunionstore(destination: string, numkeys: number, keys: string[]): Promise<number>;
+  del(...keys: string[]): Promise<number>;
+}
+
+let kv: CustomKV = vercelKv as unknown as CustomKV;
 
 const hasRestApi = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
 const redisUrl = process.env.KV_URL || process.env.REDIS_URL;
@@ -21,11 +30,7 @@ if (!hasRestApi && redisUrl) {
       return await client.zrem(key, member);
     },
     async zrange<T = any>(key: string, min: number | string, max: number | string, options?: { rev?: boolean }): Promise<T> {
-      let args: any[] = [key, min, max];
-      if (options?.rev) {
-        args.push('REV');
-      }
-      const res = await client.zrange(...args);
+      const res = await (client as any).zrange(key, min, max, ...(options?.rev ? ['REV'] : []));
       return res as unknown as T;
     },
     async zunionstore(destination: string, numkeys: number, keys: string[]): Promise<number> {
