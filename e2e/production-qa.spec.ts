@@ -17,9 +17,10 @@ test.describe("Production QA Suite", () => {
 
     // 2. Sign in as test user
     console.log("Clicking sign-in...");
-    const loginButton = page.getByRole("button", { name: "テストユーザーとしてサインイン" });
-    await expect(loginButton).toBeVisible();
-    await loginButton.click();
+    const uniqueEmail = `test-${Math.random().toString(36).substring(2, 7)}@example.com`;
+    await page.getByLabel("メールアドレス").fill(uniqueEmail);
+    await page.getByLabel("パスワード").fill("testpassword123");
+    await page.getByRole("button", { name: "サインイン / 新規アカウント作成" }).click();
 
     // Verify logged in
     await expect(page.getByRole("button", { name: "サインアウトする" })).toBeVisible({ timeout: 15000 });
@@ -51,7 +52,7 @@ test.describe("Production QA Suite", () => {
     await page.getByRole("button", { name: "プロダクトを投稿する" }).click();
 
     // Verify redirect
-    await expect(page).toHaveURL("https://engineer-platform.vercel.app/", { timeout: 25000 });
+    await expect(page).toHaveURL("/", { timeout: 25000 });
     const postCardLink = page.locator("a", { hasText: uniqueTitle }).first();
     await expect(postCardLink).toBeVisible({ timeout: 15000 });
     await page.screenshot({ path: path.join(artifactDir, "4_post_submitted.png") });

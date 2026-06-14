@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { handleSignIn, handleSignOut } from "@/actions/auth";
+import { handleSignIn, handleSignOut, handleCredentialsSignIn } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { getCumulativeRanking, getWeeklyTrendRanking } from "@/lib/ranking";
 import RankingSidebar from "@/components/ranking-sidebar";
@@ -28,8 +28,23 @@ const AppleIcon = () => (
   </svg>
 );
 
-export default async function Home() {
+export default async function Home(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParamsResolved = await props.searchParams;
+  const errorParam = searchParamsResolved.error;
   const session = await auth();
+
+  let loginErrorMessage = "";
+  if (errorParam) {
+    if (errorParam === "CredentialsSignin" || errorParam === "CallbackRouteError") {
+      loginErrorMessage = "メールアドレスまたはパスワードが正しくありません。";
+    } else if (errorParam === "SocialLoginOnly") {
+      loginErrorMessage = "このメールアドレスは既にソーシャルログインで登録されています。";
+    } else if (errorParam === "missing_fields") {
+      loginErrorMessage = "メールアドレスとパスワードを入力してください。";
+    } else {
+      loginErrorMessage = "サインイン中にエラーが発生しました。";
+    }
+  }
 
   // DB接続検証用
   let dbUser = null;
@@ -156,17 +171,50 @@ export default async function Home() {
                 </div>
 
                 <div className="flex flex-col gap-2.5">
-                  {/* テストログイン */}
-                  <form action={async () => {
-                    "use server";
-                    await handleSignIn("credentials");
-                  }}>
+                  {/* メール・パスワード ログイン */}
+                  <form action={handleCredentialsSignIn} className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="email" className="text-[10px] font-semibold text-zinc-400">
+                        メールアドレス
+                      </label>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="example@example.com"
+                        className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="password" className="text-[10px] font-semibold text-zinc-400">
+                        パスワード
+                      </label>
+                      <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        placeholder="パスワードを入力"
+                        className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none transition-colors"
+                      />
+                    </div>
+                    
+                    {loginErrorMessage && (
+                      <div className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 text-[10px] text-rose-400 font-semibold leading-relaxed">
+                        {loginErrorMessage}
+                      </div>
+                    )}
+
                     <Button 
                       type="submit" 
-                      className="w-full justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 hover:from-indigo-600 hover:to-emerald-600 text-white font-bold h-10 text-xs transition-all shadow-md"
+                      className="w-full justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 hover:from-indigo-600 hover:to-emerald-600 text-white font-bold h-10 text-xs transition-all shadow-md mt-1"
                     >
-                      テストユーザーとしてサインイン
+                      サインイン / 新規アカウント作成
                     </Button>
+                    <p className="text-[9px] text-zinc-500 text-center leading-normal">
+                      ※アカウントがない場合は自動で新規登録されます。
+                    </p>
                   </form>
 
                   <div className="relative my-1 flex items-center justify-center">

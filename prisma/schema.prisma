@@ -14,6 +14,7 @@ model User {
   emailVerified DateTime?
   image         String?   // ソーシャルアカウントのアイコン
   provider      String?   // "github", "google", "apple" (NextAuth連携や独自識別のための任意フィールド)
+  passwordHash  String?   // メールアドレス/パスワード認証用ハッシュ
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

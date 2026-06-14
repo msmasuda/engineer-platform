@@ -7,9 +7,10 @@ test.describe("Product Submission Flow", () => {
     await expect(page).toHaveTitle(/Engineer Platform/);
 
     // 未ログインであることを確認し、テストログインを実行
-    const loginButton = page.getByRole("button", { name: "テストユーザーとしてサインイン" });
-    await expect(loginButton).toBeVisible();
-    await loginButton.click();
+    const uniqueEmail = `test-${Math.random().toString(36).substring(2, 7)}@example.com`;
+    await page.getByLabel("メールアドレス").fill(uniqueEmail);
+    await page.getByLabel("パスワード").fill("testpassword123");
+    await page.getByRole("button", { name: "サインイン / 新規アカウント作成" }).click();
 
     // 2. ログインに成功し、ダッシュボードが表示されたことを確認
     await expect(page.getByRole("button", { name: "サインアウトする" })).toBeVisible();

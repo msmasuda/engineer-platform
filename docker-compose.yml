@@ -6,9 +6,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: change_me_to_a_password  # ※ローカルLAN内用のパスワードを設定してください
-      POSTGRES_DB: postgres
+      POSTGRES_USER: engineer-platform
+      POSTGRES_PASSWORD: change_me_to_a_password # ※ローカルLAN内用のパスワードを設定してください
+      POSTGRES_DB: engineer-platform
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -16,7 +16,7 @@ services:
     image: redis:7-alpine
     container_name: engineer-platform-redis
     restart: unless-stopped
-    command: redis-server --requirepass change_me_to_a_redis_password  # ※ローカルLAN用の接続パスワードを設定してください
+    command: redis-server --requirepass change_me_to_a_redis_password # ※ローカルLAN用の接続パスワードを設定してください
     ports:
       - "6379:6379"
     volumes:

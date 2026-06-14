@@ -5,35 +5,53 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import Credentials from "next-auth/providers/credentials";
+import { hashPassword, verifyPassword } from "@/lib/auth-utils";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   providers: [
-    // 開発およびテスト環境用：テストログイン用プロバイダ
     Credentials({
       id: "credentials",
-      name: "Test Account",
+      name: "Email and Password",
       credentials: {
         email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const email = (credentials?.email as string) || "test@example.com";
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        const email = credentials.email as string;
+        const password = credentials.password as string;
         
         try {
-          // テストユーザーがDBに存在するか確認、なければ作成
           let user = await db.user.findUnique({
             where: { email },
           });
 
           if (!user) {
+            // アカウントが存在しない場合は新規登録
+            const passwordHash = hashPassword(password);
             user = await db.user.create({
               data: {
                 email,
-                name: "Test User",
+                name: email.split("@")[0] || "User",
                 provider: "credentials",
+                passwordHash,
                 image: null,
               },
             });
+          } else {
+            // 既に登録されているユーザーの場合、パスワード検証
+            if (!user.passwordHash) {
+              throw new Error("SocialLoginOnly");
+            }
+            
+            const isValid = verifyPassword(password, user.passwordHash);
+            if (!isValid) {
+              return null;
+            }
           }
 
           return user;
