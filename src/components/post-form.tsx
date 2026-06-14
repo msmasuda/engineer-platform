@@ -20,11 +20,11 @@ const MASTER_TECHS = [
 ];
 
 const MASTER_LLMS = [
-  "Gemini 3 Pro", "Claude 3.5 Sonnet", "GPT-4o", "Llama 3", "DeepSeek-V3"
+  "Gemini 3.5 Flash", "Gemini 3 Pro", "Claude 3.5 Sonnet", "GPT-4o", "Llama 3", "DeepSeek-V3"
 ];
 
 const MASTER_TOOLS = [
-  "Cursor", "Cline", "Roo Code", "GitHub Copilot", "v0"
+  "AntigravityIDE", "Cursor", "Cline", "Roo Code", "GitHub Copilot", "v0"
 ];
 
 export default function PostForm() {
