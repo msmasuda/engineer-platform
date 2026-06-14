@@ -81,5 +81,43 @@ test.describe("Product Submission Flow", () => {
     await expect(postCard.getByText("Gemini 3 Pro")).toBeVisible();
     await expect(postCard.getByText("Tool:")).toBeVisible();
     await expect(postCard.getByText("Cursor")).toBeVisible();
+
+    // 8. 編集機能の検証
+    // 詳細ページへ移動
+    await page.locator("a", { hasText: uniqueTitle }).first().click();
+    await expect(page).toHaveURL(/\/posts\/[a-f0-9-]+/);
+
+    // 編集ボタンをクリック
+    const editButton = page.getByRole("link", { name: "編集する" });
+    await expect(editButton).toBeVisible();
+    await editButton.click();
+
+    // 編集画面であることを確認し、タイトルを書き換える
+    await expect(page).toHaveURL(/\/posts\/[a-f0-9-]+\/edit/);
+    const editedTitle = `${uniqueTitle} - Edited`;
+    await page.getByLabel("プロダクト名").fill(editedTitle);
+
+    // 変更保存
+    await page.getByRole("button", { name: "変更を保存する" }).click();
+
+    // 詳細ページへ戻り、変更が反映されたことを確認
+    await expect(page).toHaveURL(/\/posts\/[a-f0-9-]+/);
+    await expect(page.getByRole("heading", { name: editedTitle })).toBeVisible();
+
+    // 9. 削除機能の検証
+    // ダイアログの自動承認を設定
+    page.once("dialog", (dialog) => {
+      expect(dialog.message()).toContain("本当にこの投稿を削除しますか？");
+      dialog.accept();
+    });
+
+    // 削除ボタンをクリック
+    const deleteButton = page.getByRole("button", { name: "削除する" });
+    await expect(deleteButton).toBeVisible();
+    await deleteButton.click();
+
+    // 削除後、トップページに戻り、投稿が表示されなくなっていることを確認
+    await expect(page).toHaveURL("/");
+    await expect(page.locator("a", { hasText: editedTitle })).not.toBeVisible();
   });
 });

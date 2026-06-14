@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { postSchema, type PostInput } from "@/lib/schemas/post";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { recordLikeInRedis, recordUnlikeInRedis } from "@/lib/ranking";
+import { recordLikeInRedis, recordUnlikeInRedis, removePostFromRedisRanking } from "@/lib/ranking";
 
 export interface CreatePostResponse {
   success: boolean;
@@ -155,4 +155,134 @@ export async function toggleLike(postId: string): Promise<ToggleLikeResponse> {
       message: "いいねの処理中にエラーが発生しました。",
     };
   }
+}
+
+/**
+ * 投稿を更新します。
+ */
+export async function updatePost(postId: string, input: PostInput): Promise<CreatePostResponse> {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return {
+      success: false,
+      message: "サインインが必要です。",
+    };
+  }
+
+  // 投稿が存在し、かつ本人のものであるか確認
+  const post = await db.post.findUnique({
+    where: { id: postId },
+  });
+
+  if (!post) {
+    return {
+      success: false,
+      message: "指定された投稿が見つかりません。",
+    };
+  }
+
+  if (post.userId !== session.user.id) {
+    return {
+      success: false,
+      message: "他人の投稿を変更する権限がありません。",
+    };
+  }
+
+  // バリデーション実行
+  const result = postSchema.safeParse(input);
+  if (!result.success) {
+    return {
+      success: false,
+      errors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const { data } = result;
+
+  try {
+    const tags = data.techTags.map((name) => ({
+      where: { name },
+      create: { name },
+    }));
+
+    await db.post.update({
+      where: { id: postId },
+      data: {
+        title: data.title,
+        url: data.url,
+        description: data.description,
+        githubUrl: data.githubUrl || null,
+        usesAI: data.usesAI,
+        aiModels: data.usesAI ? data.aiModels : [],
+        aiTools: data.usesAI ? data.aiTools : [],
+        techTags: {
+          set: [], // 既存のタグの関連付けを全削除
+          connectOrCreate: tags,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Failed to update post:", error);
+    return {
+      success: false,
+      message: "データベースの更新時にエラーが発生しました。",
+    };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/posts/${postId}`);
+  redirect(`/posts/${postId}`);
+}
+
+/**
+ * 投稿を削除します。
+ */
+export async function deletePost(postId: string): Promise<{ success: boolean; message?: string }> {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return {
+      success: false,
+      message: "サインインが必要です。",
+    };
+  }
+
+  // 投稿が存在し、かつ本人のものであるか確認
+  const post = await db.post.findUnique({
+    where: { id: postId },
+  });
+
+  if (!post) {
+    return {
+      success: false,
+      message: "指定された投稿が見つかりません。",
+    };
+  }
+
+  if (post.userId !== session.user.id) {
+    return {
+      success: false,
+      message: "他人の投稿を削除する権限がありません。",
+    };
+  }
+
+  try {
+    // データベースから削除 (likes は Cascade で自動削除されます)
+    await db.post.delete({
+      where: { id: postId },
+    });
+
+    // Redisランキングから削除
+    await removePostFromRedisRanking(postId);
+  } catch (error) {
+    console.error("Failed to delete post:", error);
+    return {
+      success: false,
+      message: "投稿の削除時にエラーが発生しました。",
+    };
+  }
+
+  revalidatePath("/");
+  redirect("/");
 }

@@ -117,3 +117,20 @@ async function fetchPostsInOrder(postIds: string[]) {
     .map((id) => postMap.get(id))
     .filter((post): post is NonNullable<typeof post> => !!post);
 }
+
+/**
+ * 投稿が削除された際、Redisのランキング（累計および過去10日分のデイリーキー）から削除します。
+ */
+export async function removePostFromRedisRanking(postId: string): Promise<void> {
+  // 1. 累計ランキングから削除
+  await kv.zrem("ranking:likes", postId);
+
+  // 2. 過去10日分のデイリーランキングキーから削除
+  for (let i = 0; i < 10; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateString = d.toISOString().split("T")[0];
+    const dailyKey = `ranking:daily:${dateString}`;
+    await kv.zrem(dailyKey, postId);
+  }
+}

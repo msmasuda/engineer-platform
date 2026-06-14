@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { postSchema, type PostInput } from "@/lib/schemas/post";
-import { createPost } from "@/actions/post";
+import { createPost, updatePost } from "@/actions/post";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +27,21 @@ const MASTER_TOOLS = [
   "AntigravityIDE", "Cursor", "Cline", "Roo Code", "GitHub Copilot", "v0"
 ];
 
-export default function PostForm() {
+interface PostFormProps {
+  initialData?: {
+    id: string;
+    title: string;
+    url: string;
+    description: string;
+    githubUrl: string | null;
+    usesAI: boolean;
+    aiModels: string[];
+    aiTools: string[];
+    techTags: { name: string }[];
+  };
+}
+
+export default function PostForm({ initialData }: PostFormProps = {}) {
   const [isPending, startTransition] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -46,14 +60,14 @@ export default function PostForm() {
   } = useForm<PostInput>({
     resolver: zodResolver(postSchema),
     defaultValues: {
-      title: "",
-      url: "",
-      description: "",
-      githubUrl: "",
-      techTags: [],
-      usesAI: false,
-      aiModels: [],
-      aiTools: [],
+      title: initialData?.title || "",
+      url: initialData?.url || "",
+      description: initialData?.description || "",
+      githubUrl: initialData?.githubUrl || "",
+      techTags: initialData?.techTags.map((tag) => tag.name) || [],
+      usesAI: initialData?.usesAI || false,
+      aiModels: initialData?.aiModels || [],
+      aiTools: initialData?.aiTools || [],
     },
   });
 
@@ -141,7 +155,9 @@ export default function PostForm() {
   const onSubmit = (data: PostInput) => {
     setSubmitError(null);
     startTransition(async () => {
-      const response = await createPost(data);
+      const response = initialData
+        ? await updatePost(initialData.id, data)
+        : await createPost(data);
       if (!response.success) {
         setSubmitError(response.message || "送信中にエラーが発生しました。");
       }
@@ -417,10 +433,10 @@ export default function PostForm() {
         {isPending ? (
           <div className="flex items-center justify-center gap-2">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            投稿中...
+            {initialData ? "保存中..." : "投稿中..."}
           </div>
         ) : (
-          "プロダクトを投稿する"
+          initialData ? "変更を保存する" : "プロダクトを投稿する"
         )}
       </Button>
     </form>

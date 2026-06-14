@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LikeButton from "@/components/like-button";
 import ContactModal from "@/components/contact-modal";
-import { ExternalLink, Calendar, ArrowLeft, Cpu, User } from "lucide-react";
+import DeletePostButton from "@/components/delete-post-button";
+import { ExternalLink, Calendar, ArrowLeft, Cpu, User, Pencil } from "lucide-react";
 
 const GithubIcon = () => (
   <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -50,6 +51,7 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   const session = await auth();
   const currentUserId = session?.user?.id;
+  const isOwner = currentUserId === post.userId;
   
   // 現在のユーザーがいいね済みか確認
   const isLiked = currentUserId 
@@ -144,6 +146,17 @@ export default async function PostDetailPage({ params }: PageProps) {
                   GitHub リポジトリ
                 </Button>
               </a>
+            )}
+            {isOwner && (
+              <>
+                <Link href={`/posts/${post.id}/edit`} className="flex-1 sm:flex-initial">
+                  <Button variant="outline" className="w-full justify-center rounded-xl bg-zinc-950/40 border-white/10 hover:border-white/20 hover:bg-white/5 text-zinc-300 hover:text-white font-bold h-11 px-5 transition-all flex items-center gap-2">
+                    <Pencil className="h-4 w-4" />
+                    編集する
+                  </Button>
+                </Link>
+                <DeletePostButton postId={post.id} />
+              </>
             )}
           </div>
 
