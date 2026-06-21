@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Engineer Platform
 
-## Getting Started
+エンジニアが手がけた成果物（Webアプリ・ツール・ライブラリなど）を投稿し、他のエンジニアから評価や仕事の依頼を受け取れるマッチングプラットフォームです。
 
-First, run the development server:
+## 技術スタック
+
+- **フレームワーク**: Next.js 16 (App Router)
+- **言語**: TypeScript
+- **DB**: PostgreSQL (Prisma ORM + `@prisma/adapter-pg`)
+- **キャッシュ / ランキング**: Redis (ioredis)
+- **認証**: Auth.js (NextAuth v5) — メール/パスワード・GitHub・Google・Apple
+- **スタイル**: Tailwind CSS v4
+- **デプロイ**: Vercel
+
+## ローカル開発環境のセットアップ
+
+### 前提条件
+
+- Node.js 20+
+- Docker（PostgreSQL・Redis の起動に使用）
+
+### 手順
 
 ```bash
+# 1. リポジトリのクローン
+git clone <repository-url>
+cd engineer-platform
+
+# 2. 依存パッケージのインストール
+npm install
+
+# 3. 環境変数の設定
+cp .env.example .env.local
+# .env.local を編集して DATABASE_URL・REDIS_URL などを設定
+
+# 4. データベースの起動
+docker compose up -d
+
+# 5. マイグレーションの適用
+npx prisma migrate deploy
+
+# 6. テストデータの投入（任意）
+npm run db:seed
+
+# 7. 開発サーバーの起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 主なコマンド
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| コマンド | 説明 |
+|---|---|
+| `npm run dev` | 開発サーバーを起動 |
+| `npm run build` | 本番ビルド |
+| `npm run db:seed` | テストデータをDBとRedisに投入（既存データはリセット） |
+| `npx prisma migrate dev` | マイグレーションの作成・適用 |
+| `npx prisma studio` | Prisma Studio でDBを GUI 操作 |
+| `npm test` | ユニットテストを実行 (Vitest) |
+| `npm run test:e2e` | E2E テストを実行 (Playwright) |
 
-## Learn More
+## テストデータ（シード）
 
-To learn more about Next.js, take a look at the following resources:
+`npm run db:seed` を実行すると以下のデータが投入されます。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### テストユーザー
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+全員パスワードは `password123` です。
 
-## Deploy on Vercel
+| 名前 | メールアドレス |
+|---|---|
+| 田中 翔 | tanaka.sho@example.com |
+| 山本 悠希 | yamamoto.yuki@example.com |
+| 鈴木 蓮 | suzuki.ren@example.com |
+| 渡辺 真央 | watanabe.mao@example.com |
+| 伊藤 陽翔 | ito.haruto@example.com |
+| 中村 咲 | nakamura.saki@example.com |
+| 小林 匠 | kobayashi.takumi@example.com |
+| 加藤 陽菜 | kato.hina@example.com |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+シードは冪等ではなく、**実行のたびに既存データをすべて削除してから再投入**します。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 主な機能
+
+- **プロダクト投稿**: タイトル・URL・GitHub URL・説明・技術タグ・AI利用情報を登録
+- **いいね**: 投稿にいいねでき、ランキングに反映
+- **ランキング**: 累計いいね順・週間トレンド順のサイドバー表示
+- **認証**: メール/パスワードによるサインイン（新規登録も同一フォームで完結）
+- **投稿の編集・削除**: 投稿者本人のみ操作可能
