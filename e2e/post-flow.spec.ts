@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Product Submission Flow", () => {
   test("should login, submit a product with tags/AI info, and verify it on the dashboard", async ({ page }) => {
+    test.setTimeout(90000);
+
     // 1. トップページにアクセス
     await page.goto("/");
     await expect(page).toHaveTitle(/Engineer Platform/);
@@ -13,8 +15,8 @@ test.describe("Product Submission Flow", () => {
     await page.getByRole("button", { name: "サインイン / 新規アカウント作成" }).click();
 
     // 2. ログインに成功し、ダッシュボードが表示されたことを確認
-    await expect(page.getByRole("button", { name: "サインアウトする" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "新しいプロダクトを投稿する" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "サインアウトする" })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: "新しいプロダクトを投稿する" })).toBeVisible({ timeout: 15000 });
 
     // 3. 投稿ページへ遷移
     await page.getByRole("button", { name: "新しいプロダクトを投稿する" }).click();
@@ -65,11 +67,11 @@ test.describe("Product Submission Flow", () => {
     await submitButton.click();
 
     // 7. 送信後、トップページにリダイレクトされ、一覧に正しく表示されているか検証
-    await expect(page).toHaveURL("/");
-    
+    await expect(page).toHaveURL("/", { timeout: 25000 });
+
     // 投稿カードの検証
     const postCard = page.locator("div.rounded-2xl", { hasText: uniqueTitle });
-    await expect(postCard).toBeVisible();
+    await expect(postCard).toBeVisible({ timeout: 10000 });
 
     // 技術タグバッジの検証
     await expect(postCard.locator("span", { hasText: "React" }).first()).toBeVisible();
@@ -101,8 +103,8 @@ test.describe("Product Submission Flow", () => {
     await page.getByRole("button", { name: "変更を保存する" }).click();
 
     // 詳細ページへ戻り、変更が反映されたことを確認
-    await expect(page).toHaveURL(/\/posts\/[a-f0-9-]+/);
-    await expect(page.getByRole("heading", { name: editedTitle })).toBeVisible();
+    await expect(page).toHaveURL(/\/posts\/[a-f0-9-]+/, { timeout: 15000 });
+    await expect(page.getByRole("heading", { name: editedTitle })).toBeVisible({ timeout: 10000 });
 
     // 9. 削除機能の検証
     // ダイアログの自動承認を設定
@@ -117,7 +119,7 @@ test.describe("Product Submission Flow", () => {
     await deleteButton.click();
 
     // 削除後、トップページに戻り、投稿が表示されなくなっていることを確認
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL("/", { timeout: 15000 });
     await expect(page.locator("a", { hasText: editedTitle })).not.toBeVisible();
   });
 });

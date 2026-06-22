@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 import path from "path";
+import { mkdirSync } from "fs";
 
-const artifactDir = "/Users/mauda/.gemini/antigravity-cli/brain/5c79a8d0-345b-4abc-af45-da9b0b6557fb";
+const artifactDir = path.join(__dirname, "../test-results/production-qa-screenshots");
+mkdirSync(artifactDir, { recursive: true });
 
 test.describe("Production QA Suite", () => {
   test("should run full QA flow in production", async ({ page }) => {
