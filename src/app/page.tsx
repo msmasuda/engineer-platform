@@ -28,9 +28,12 @@ const AppleIcon = () => (
   </svg>
 );
 
-export default async function Home(props: { searchParams: Promise<{ error?: string }> }) {
+const POSTS_PER_PAGE = 10;
+
+export default async function Home(props: { searchParams: Promise<{ error?: string; page?: string }> }) {
   const searchParamsResolved = await props.searchParams;
   const errorParam = searchParamsResolved.error;
+  const currentPage = Math.max(1, parseInt(searchParamsResolved.page ?? "1", 10) || 1);
   const session = await auth();
 
   let loginErrorMessage = "";
@@ -61,38 +64,45 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
     }
   }
 
-  // すべてのプロダクト投稿をタグといいねを含めて取得
+  const postInclude = {
+    user: { select: { id: true, name: true, image: true } },
+    techTags: true,
+    likes: { select: { userId: true } },
+  };
+
+  // ページング付きで全投稿を取得
   let allPosts: any[] = [];
+  let totalPages = 1;
   try {
-    allPosts = await db.post.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-        techTags: true,
-        likes: {
-          select: {
-            userId: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const [posts, totalCount] = await Promise.all([
+      db.post.findMany({
+        include: postInclude,
+        orderBy: { createdAt: "desc" },
+        take: POSTS_PER_PAGE,
+        skip: (currentPage - 1) * POSTS_PER_PAGE,
+      }),
+      db.post.count(),
+    ]);
+    allPosts = posts;
+    totalPages = Math.max(1, Math.ceil(totalCount / POSTS_PER_PAGE));
   } catch (error) {
     console.error("Failed to fetch posts:", error);
   }
 
-  // ログインユーザーの投稿をフィルタリング
+  // ログインユーザーの投稿を別途全件取得
   const currentUserId = session?.user?.id;
-  const userPosts = currentUserId
-    ? allPosts.filter((post) => post.userId === currentUserId)
-    : [];
+  let userPosts: any[] = [];
+  if (currentUserId) {
+    try {
+      userPosts = await db.post.findMany({
+        where: { userId: currentUserId },
+        include: postInclude,
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (error) {
+      console.error("Failed to fetch user posts:", error);
+    }
+  }
 
   // Vercel KV からリアルタイムランキングデータを取得
   let weeklyTrendRanking: any[] = [];
@@ -150,6 +160,8 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
               allPosts={allPosts}
               userPosts={userPosts}
               currentUserId={session?.user?.id}
+              currentPage={currentPage}
+              totalPages={totalPages}
             />
           </div>
 

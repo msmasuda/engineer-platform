@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ExternalLink, Cpu, LayoutGrid, FolderHeart, Calendar } from "lucide-react";
+import { Heart, ExternalLink, Cpu, LayoutGrid, FolderHeart, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Post {
   id: string;
@@ -34,9 +34,11 @@ interface FeedTabsProps {
   allPosts: Post[];
   userPosts: Post[];
   currentUserId?: string;
+  currentPage?: number;
+  totalPages?: number;
 }
 
-export default function FeedTabs({ allPosts, userPosts, currentUserId }: FeedTabsProps) {
+export default function FeedTabs({ allPosts, userPosts, currentUserId, currentPage = 1, totalPages = 1 }: FeedTabsProps) {
   const [activeTab, setActiveTab] = useState<"all" | "mine">("all");
 
   const currentPosts = activeTab === "all" ? allPosts : userPosts;
@@ -188,6 +190,59 @@ export default function FeedTabs({ allPosts, userPosts, currentUserId }: FeedTab
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* ページネーション（「すべて」タブのみ） */}
+      {activeTab === "all" && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 mt-2">
+          <Link
+            href={`?page=${currentPage - 1}`}
+            className={`flex items-center justify-center h-8 w-8 rounded-lg border text-xs transition-colors ${
+              currentPage <= 1
+                ? "pointer-events-none border-white/5 text-zinc-600"
+                : "border-white/10 text-zinc-400 hover:border-indigo-500/50 hover:text-zinc-200"
+            }`}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+            const isActive = page === currentPage;
+            const isNear = Math.abs(page - currentPage) <= 1 || page === 1 || page === totalPages;
+            if (!isNear) {
+              const isPrevEllipsis = page === currentPage - 2;
+              const isNextEllipsis = page === currentPage + 2;
+              if (isPrevEllipsis || isNextEllipsis) {
+                return <span key={page} className="text-zinc-600 text-xs px-1">…</span>;
+              }
+              return null;
+            }
+            return (
+              <Link
+                key={page}
+                href={`?page=${page}`}
+                className={`flex items-center justify-center h-8 w-8 rounded-lg border text-xs font-semibold transition-colors ${
+                  isActive
+                    ? "border-indigo-500 bg-indigo-500/10 text-indigo-400"
+                    : "border-white/10 text-zinc-400 hover:border-indigo-500/50 hover:text-zinc-200"
+                }`}
+              >
+                {page}
+              </Link>
+            );
+          })}
+
+          <Link
+            href={`?page=${currentPage + 1}`}
+            className={`flex items-center justify-center h-8 w-8 rounded-lg border text-xs transition-colors ${
+              currentPage >= totalPages
+                ? "pointer-events-none border-white/5 text-zinc-600"
+                : "border-white/10 text-zinc-400 hover:border-indigo-500/50 hover:text-zinc-200"
+            }`}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
       )}
     </div>
