@@ -118,8 +118,6 @@ export async function toggleLike(postId: string): Promise<ToggleLikeResponse> {
           },
         },
       });
-      // Redisの更新
-      await recordUnlikeInRedis(postId);
       liked = false;
     } else {
       // いいね登録
@@ -129,9 +127,18 @@ export async function toggleLike(postId: string): Promise<ToggleLikeResponse> {
           postId,
         },
       });
-      // Redisの更新
-      await recordLikeInRedis(postId);
       liked = true;
+    }
+
+    // Redisランキング更新（失敗してもいいね操作自体は成功とみなす）
+    try {
+      if (liked) {
+        await recordLikeInRedis(postId);
+      } else {
+        await recordUnlikeInRedis(postId);
+      }
+    } catch (redisError) {
+      console.error("Failed to update Redis ranking (non-fatal):", redisError);
     }
 
     // 最新のいいね数をカウント
@@ -272,15 +279,19 @@ export async function deletePost(postId: string): Promise<{ success: boolean; me
     await db.post.delete({
       where: { id: postId },
     });
-
-    // Redisランキングから削除
-    await removePostFromRedisRanking(postId);
   } catch (error) {
     console.error("Failed to delete post:", error);
     return {
       success: false,
       message: "投稿の削除時にエラーが発生しました。",
     };
+  }
+
+  // Redisランキングから削除（失敗しても削除自体は成功とみなす）
+  try {
+    await removePostFromRedisRanking(postId);
+  } catch (error) {
+    console.error("Failed to remove post from Redis ranking (non-fatal):", error);
   }
 
   revalidatePath("/");
