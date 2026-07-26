@@ -10,6 +10,24 @@ const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const db = new PrismaClient({ adapter });
 
+const AI_MODELS = [
+  "Gemini Flash",
+  "Gemini Pro",
+  "Claude Sonnet",
+  "GPT",
+  "Claude Opus",
+  "Claude Fable",
+];
+
+const AI_TOOLS = [
+  "AntigravityIDE",
+  "Cursor",
+  "Cline",
+  "Claude Code",
+  "GitHub Copilot",
+  "Codex",
+];
+
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
@@ -361,10 +379,26 @@ async function main() {
   await db.like.deleteMany();
   await db.post.deleteMany();
   await db.techTag.deleteMany();
+  await db.aiModel.deleteMany();
+  await db.aiTool.deleteMany();
   await db.session.deleteMany();
   await db.account.deleteMany();
   await db.user.deleteMany();
   console.log("🗑️  Cleared existing data.");
+
+  await db.aiModel.createMany({
+    data: AI_MODELS.map((name, index) => ({
+      name,
+      displayOrder: (index + 1) * 10,
+    })),
+  });
+  await db.aiTool.createMany({
+    data: AI_TOOLS.map((name, index) => ({
+      name,
+      displayOrder: (index + 1) * 10,
+    })),
+  });
+  console.log(`🤖 Created ${AI_MODELS.length} AI models and ${AI_TOOLS.length} AI tools.`);
 
   // Redis のランキングキーをクリア
   const redis = new Redis(process.env.KV_URL || process.env.REDIS_URL || "redis://localhost:6379");

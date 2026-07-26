@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import PostForm from "@/components/post-form";
 import Link from "next/link";
+import { getActiveAiMasterOptions } from "@/lib/ai-masters";
 
 interface PageProps {
   params: Promise<{
@@ -20,16 +21,19 @@ export default async function EditPostPage({ params }: PageProps) {
   }
 
   // 投稿の詳細を取得
-  const post = await db.post.findUnique({
-    where: { id },
-    include: {
-      techTags: {
-        select: {
-          name: true,
+  const [post, aiMasterOptions] = await Promise.all([
+    db.post.findUnique({
+      where: { id },
+      include: {
+        techTags: {
+          select: {
+            name: true,
+          },
         },
       },
-    },
-  });
+    }),
+    getActiveAiMasterOptions(),
+  ]);
 
   if (!post) {
     notFound();
@@ -71,7 +75,7 @@ export default async function EditPostPage({ params }: PageProps) {
             </p>
           </div>
 
-          <PostForm initialData={post} />
+          <PostForm initialData={post} aiMasterOptions={aiMasterOptions} />
         </div>
       </div>
     </div>

@@ -19,15 +19,11 @@ const MASTER_TECHS = [
   "Go", "Rust", "Python", "Docker", "AWS", "Vercel", "HTML", "CSS"
 ];
 
-const MASTER_LLMS = [
-  "Gemini 3.5 Flash", "Gemini 3 Pro", "Claude 3.5 Sonnet", "GPT-4o", "Llama 3", "DeepSeek-V3"
-];
-
-const MASTER_TOOLS = [
-  "AntigravityIDE", "Cursor", "Cline", "Roo Code", "GitHub Copilot", "v0"
-];
-
 interface PostFormProps {
+  aiMasterOptions: {
+    models: string[];
+    tools: string[];
+  };
   initialData?: {
     id: string;
     title: string;
@@ -41,7 +37,7 @@ interface PostFormProps {
   };
 }
 
-export default function PostForm({ initialData }: PostFormProps = {}) {
+export default function PostForm({ aiMasterOptions, initialData }: PostFormProps) {
   const [isPending, startTransition] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -75,6 +71,12 @@ export default function PostForm({ initialData }: PostFormProps = {}) {
   const usesAI = watch("usesAI");
   const selectedLLMs = watch("aiModels");
   const selectedTools = watch("aiTools");
+  const modelOptions = Array.from(
+    new Set([...aiMasterOptions.models, ...(initialData?.aiModels ?? [])])
+  );
+  const toolOptions = Array.from(
+    new Set([...aiMasterOptions.tools, ...(initialData?.aiTools ?? [])])
+  );
 
   // サジェスト表示のイベントリスナ制御
   useEffect(() => {
@@ -371,7 +373,7 @@ export default function PostForm({ initialData }: PostFormProps = {}) {
             <div className="flex flex-col gap-2">
               <Label className="text-zinc-300 font-semibold">使用したLLMモデル（複数選択可）</Label>
               <div className="flex flex-wrap gap-1.5 mt-1">
-                {MASTER_LLMS.map((model) => {
+                {modelOptions.map((model) => {
                   const isSelected = selectedLLMs.includes(model);
                   return (
                     <button
@@ -396,7 +398,7 @@ export default function PostForm({ initialData }: PostFormProps = {}) {
             <div className="flex flex-col gap-2">
               <Label className="text-zinc-300 font-semibold">使用したAIプロダクト・ツール（複数選択可）</Label>
               <div className="flex flex-wrap gap-1.5 mt-1">
-                {MASTER_TOOLS.map((tool) => {
+                {toolOptions.map((tool) => {
                   const isSelected = selectedTools.includes(tool);
                   return (
                     <button

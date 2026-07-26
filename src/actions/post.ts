@@ -6,6 +6,7 @@ import { postSchema, type PostInput } from "@/lib/schemas/post";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { recordLikeInRedis, recordUnlikeInRedis, removePostFromRedisRanking } from "@/lib/ranking";
+import { hasOnlyAvailableAiSelections } from "@/lib/ai-masters";
 
 export interface CreatePostResponse {
   success: boolean;
@@ -37,6 +38,16 @@ export async function createPost(input: PostInput): Promise<CreatePostResponse> 
   }
 
   const { data } = result;
+
+  if (
+    data.usesAI &&
+    !(await hasOnlyAvailableAiSelections(data.aiModels, data.aiTools))
+  ) {
+    return {
+      success: false,
+      message: "選択できないLLMモデルまたはAIツールが含まれています。",
+    };
+  }
 
   try {
     // タグの connectOrCreate 用配列を作成
@@ -206,6 +217,21 @@ export async function updatePost(postId: string, input: PostInput): Promise<Crea
   }
 
   const { data } = result;
+
+  if (
+    data.usesAI &&
+    !(await hasOnlyAvailableAiSelections(
+      data.aiModels,
+      data.aiTools,
+      post.aiModels,
+      post.aiTools,
+    ))
+  ) {
+    return {
+      success: false,
+      message: "選択できないLLMモデルまたはAIツールが含まれています。",
+    };
+  }
 
   try {
     const tags = data.techTags.map((name) => ({
