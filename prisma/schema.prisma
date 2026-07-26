@@ -98,6 +98,22 @@ model TechTag {
   posts Post[]
 }
 
+// 投稿フォームで選択できるLLMモデル
+model AiModel {
+  id           String  @id @default(uuid())
+  name         String  @unique
+  displayOrder Int     @default(0)
+  isActive     Boolean @default(true)
+}
+
+// 投稿フォームで選択できるAIプロダクト・ツール
+model AiTool {
+  id           String  @id @default(uuid())
+  name         String  @unique
+  displayOrder Int     @default(0)
+  isActive     Boolean @default(true)
+}
+
 // いいね管理（重複防止用）
 model Like {
   id        String   @id @default(uuid())

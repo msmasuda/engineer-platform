@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import PostForm from "@/components/post-form";
 import Link from "next/link";
+import { getActiveAiMasterOptions } from "@/lib/ai-masters";
 
 export default async function NewPostPage() {
   const session = await auth();
@@ -10,6 +11,8 @@ export default async function NewPostPage() {
   if (!session?.user) {
     redirect("/");
   }
+
+  const aiMasterOptions = await getActiveAiMasterOptions();
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-radial from-slate-900 via-zinc-950 to-black px-4 py-12 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
@@ -42,7 +45,7 @@ export default async function NewPostPage() {
             </p>
           </div>
 
-          <PostForm />
+          <PostForm aiMasterOptions={aiMasterOptions} />
         </div>
       </div>
     </div>
