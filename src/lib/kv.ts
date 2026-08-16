@@ -5,7 +5,7 @@ export interface CustomKV {
   zincrby(key: string, increment: number, member: string): Promise<number | null>;
   expire(key: string, seconds: number): Promise<number>;
   zrem(key: string, member: string): Promise<number>;
-  zrange<T = any>(key: string, min: number | string, max: number | string, options?: { rev?: boolean }): Promise<T>;
+  zrange<T = unknown>(key: string, min: number | string, max: number | string, options?: { rev?: boolean }): Promise<T>;
   zunionstore(destination: string, numkeys: number, keys: string[]): Promise<number>;
   del(...keys: string[]): Promise<number>;
 }
@@ -29,8 +29,10 @@ if (!hasRestApi && redisUrl) {
     async zrem(key: string, member: string): Promise<number> {
       return await client.zrem(key, member);
     },
-    async zrange<T = any>(key: string, min: number | string, max: number | string, options?: { rev?: boolean }): Promise<T> {
-      const res = await (client as any).zrange(key, min, max, ...(options?.rev ? ['REV'] : []));
+    async zrange<T = unknown>(key: string, min: number | string, max: number | string, options?: { rev?: boolean }): Promise<T> {
+      const res = options?.rev
+        ? await client.zrange(key, min, max, 'REV')
+        : await client.zrange(key, min, max);
       return res as unknown as T;
     },
     async zunionstore(destination: string, numkeys: number, keys: string[]): Promise<number> {

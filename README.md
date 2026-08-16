@@ -56,6 +56,7 @@ npm run dev
 |---|---|
 | `npm run dev` | 開発サーバーを起動 |
 | `npm run build` | 本番ビルド |
+| `npm run lint` | ESLintによるコード品質チェック |
 | `npm run db:seed` | テストデータをDBとRedisに投入（既存データはリセット） |
 | `npx prisma migrate dev` | マイグレーションの作成・適用 |
 | `npx prisma studio` | Prisma Studio でDBを GUI 操作 |
