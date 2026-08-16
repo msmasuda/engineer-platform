@@ -11,6 +11,7 @@
 - **DB**: PostgreSQL (Prisma ORM + `@prisma/adapter-pg`)
 - **キャッシュ / ランキング**: Redis (ioredis)
 - **認証**: Auth.js (NextAuth v5) — メール/パスワード・GitHub・Google・Apple
+- **メール通知**: Resend
 - **スタイル**: Tailwind CSS v4
 - **デプロイ**: Vercel
 
@@ -91,6 +92,18 @@ npm run dev
 - **ランキング**: 累計いいね順・週間トレンド順のサイドバー表示
 - **認証**: メール/パスワードによるサインイン（新規登録も同一フォームで完結）
 - **投稿の編集・削除**: 投稿者本人のみ操作可能
+- **コンタクト**: 問い合わせをDBへ保存し、投稿者へメール通知（匿名送信可・レート制限付き）
+
+## コンタクト通知の設定
+
+投稿者への通知メールにはResendを使用します。Resendで送信ドメインを検証し、次の環境変数を設定してください。
+
+```bash
+RESEND_API_KEY="re_..."
+CONTACT_EMAIL_FROM="Engineer Platform <contact@example.com>"
+```
+
+VercelではResend Marketplace Integrationを利用すると`RESEND_API_KEY`を連携できます。`CONTACT_EMAIL_FROM`にはResendで検証済みのドメインに属する送信元を指定してください。未設定または送信失敗時もコンタクト内容はDBに`FAILED`として保存され、画面には通知失敗が表示されます。
 
 ## AI選択肢のマスター管理
 
