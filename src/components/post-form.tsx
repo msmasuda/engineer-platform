@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { postSchema, type PostInput } from "@/lib/schemas/post";
 import { createPost, updatePost } from "@/actions/post";
@@ -51,7 +51,7 @@ export default function PostForm({ aiMasterOptions, initialData }: PostFormProps
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<PostInput>({
     resolver: zodResolver(postSchema),
@@ -67,10 +67,10 @@ export default function PostForm({ aiMasterOptions, initialData }: PostFormProps
     },
   });
 
-  const selectedTags = watch("techTags");
-  const usesAI = watch("usesAI");
-  const selectedLLMs = watch("aiModels");
-  const selectedTools = watch("aiTools");
+  const selectedTags = useWatch({ control, name: "techTags" });
+  const usesAI = useWatch({ control, name: "usesAI" });
+  const selectedLLMs = useWatch({ control, name: "aiModels" });
+  const selectedTools = useWatch({ control, name: "aiTools" });
   const modelOptions = Array.from(
     new Set([...aiMasterOptions.models, ...(initialData?.aiModels ?? [])])
   );

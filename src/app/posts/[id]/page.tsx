@@ -127,7 +127,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                 initialLikeCount={likeCount}
                 hasUser={!!currentUserId}
               />
-              <ContactModal postTitle={post.title} creatorName={post.user.name || "作者"} />
+              <ContactModal postId={post.id} postTitle={post.title} creatorName={post.user.name || "作者"} />
             </div>
           </div>
 
