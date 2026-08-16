@@ -209,6 +209,7 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
                         name="password"
                         type="password"
                         required
+                        maxLength={128}
                         placeholder="パスワードを入力"
                         className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:border-indigo-500 focus:outline-none transition-colors"
                       />
@@ -227,7 +228,7 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
                       サインイン / 新規アカウント作成
                     </Button>
                     <p className="text-[9px] text-zinc-500 text-center leading-normal">
-                      ※アカウントがない場合は自動で新規登録されます。
+                      ※新規登録のパスワードは15〜128文字です。既存アカウントは現在のパスワードでサインインできます。
                     </p>
                   </form>
 
