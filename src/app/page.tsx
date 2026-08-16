@@ -7,7 +7,8 @@ import RankingSidebar from "@/components/ranking-sidebar";
 import FeedTabs from "@/components/feed-tabs";
 import Image from "next/image";
 import Link from "next/link";
-import { LogOut, Plus, Database, Sparkles, LogIn, Laptop } from "lucide-react";
+import { LogOut, Plus, LogIn, Laptop } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 
 // ソーシャルアイコンの定義
 const GithubIcon = () => (
@@ -68,10 +69,11 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
     user: { select: { id: true, name: true, image: true } },
     techTags: true,
     likes: { select: { userId: true } },
-  };
+  } satisfies Prisma.PostInclude;
+  type PostWithRelations = Prisma.PostGetPayload<{ include: typeof postInclude }>;
 
   // ページング付きで全投稿を取得
-  let allPosts: any[] = [];
+  let allPosts: PostWithRelations[] = [];
   let totalPages = 1;
   try {
     const [posts, totalCount] = await Promise.all([
@@ -91,7 +93,7 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
 
   // ログインユーザーの投稿を別途全件取得
   const currentUserId = session?.user?.id;
-  let userPosts: any[] = [];
+  let userPosts: PostWithRelations[] = [];
   if (currentUserId) {
     try {
       userPosts = await db.post.findMany({
@@ -105,8 +107,8 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
   }
 
   // Vercel KV からリアルタイムランキングデータを取得
-  let weeklyTrendRanking: any[] = [];
-  let cumulativeRanking: any[] = [];
+  let weeklyTrendRanking: Awaited<ReturnType<typeof getWeeklyTrendRanking>> = [];
+  let cumulativeRanking: Awaited<ReturnType<typeof getCumulativeRanking>> = [];
   try {
     weeklyTrendRanking = await getWeeklyTrendRanking(5);
     cumulativeRanking = await getCumulativeRanking(5);
@@ -301,10 +303,8 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
                       <h3 className="text-sm font-bold text-zinc-100 truncate">
                         {session.user?.name}
                       </h3>
-                      {/* @ts-ignore */}
                       {session.user?.provider && (
                         <span className="inline-flex items-center rounded-full bg-indigo-500/10 px-1.5 py-0.2 text-[9px] font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">
-                          {/* @ts-ignore */}
                           {session.user.provider}
                         </span>
                       )}

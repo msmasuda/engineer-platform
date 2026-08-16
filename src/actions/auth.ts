@@ -4,6 +4,15 @@ import { signIn, signOut } from "@/auth";
 
 import { redirect } from "next/navigation";
 
+function hasAuthErrorType(error: unknown): error is { type: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "type" in error &&
+    typeof error.type === "string"
+  );
+}
+
 /**
  * 指定されたプロバイダでサインインを実行します。
  * @param provider 'github' | 'google' | 'apple'
@@ -30,8 +39,8 @@ export async function handleCredentialsSignIn(formData: FormData) {
       redirectTo: "/",
     });
   } catch (error) {
-    if (error && typeof error === "object" && "type" in error) {
-      redirect(`/?error=${encodeURIComponent((error as any).type)}`);
+    if (hasAuthErrorType(error)) {
+      redirect(`/?error=${encodeURIComponent(error.type)}`);
     }
     throw error;
   }
