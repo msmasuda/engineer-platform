@@ -5,7 +5,18 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import Credentials from "next-auth/providers/credentials";
-import { hashPassword, verifyPassword } from "@/lib/auth-utils";
+import { z } from "zod";
+import {
+  hashPassword,
+  isNewPasswordAllowed,
+  verifyPassword,
+} from "@/lib/auth-utils";
+import {
+  clearLoginAttempts,
+  registerLoginAttempt,
+} from "@/lib/auth-rate-limit";
+
+const credentialEmailSchema = z.email().max(254);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -17,22 +28,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        const email = credentials.email as string;
-        const password = credentials.password as string;
+        const email = String(credentials.email).trim().toLowerCase();
+        const password = String(credentials.password);
+        if (!credentialEmailSchema.safeParse(email).success || password.length > 128) {
+          return null;
+        }
         
         try {
+          const attempt = await registerLoginAttempt(email, request);
+          if (!attempt.allowed) {
+            console.warn("Credential sign-in rate limit exceeded");
+            return null;
+          }
+
           let user = await db.user.findUnique({
             where: { email },
           });
 
           if (!user) {
             // アカウントが存在しない場合は新規登録
-            const passwordHash = hashPassword(password);
+            if (!isNewPasswordAllowed(password)) return null;
+            const passwordHash = await hashPassword(password);
             user = await db.user.create({
               data: {
                 email,
@@ -42,15 +63,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 image: null,
               },
             });
+            await clearLoginAttempts(attempt.keys);
           } else {
             // 既に登録されているユーザーの場合、パスワード検証
             if (!user.passwordHash) {
               throw new Error("SocialLoginOnly");
             }
             
-            const isValid = verifyPassword(password, user.passwordHash);
-            if (!isValid) {
+            const verification = await verifyPassword(password, user.passwordHash);
+            if (!verification.valid) {
               return null;
+            }
+
+            await clearLoginAttempts(attempt.keys);
+            if (verification.needsRehash) {
+              try {
+                await db.user.update({
+                  where: { id: user.id },
+                  data: { passwordHash: await hashPassword(password) },
+                });
+              } catch (migrationError) {
+                console.error("Failed to upgrade password hash:", migrationError);
+              }
             }
           }
 

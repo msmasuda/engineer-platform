@@ -2,8 +2,8 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
-import crypto from "crypto";
 import Redis from "ioredis";
+import { hashPassword } from "../src/lib/auth-utils";
 
 const connectionString = process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
@@ -27,12 +27,6 @@ const AI_TOOLS = [
   "GitHub Copilot",
   "Codex",
 ];
-
-function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
-  return `${salt}:${hash}`;
-}
 
 // --- ユーザーデータ ---
 const USERS = [
@@ -420,7 +414,7 @@ async function main() {
         email: u.email,
         name: u.name,
         provider: u.provider,
-        passwordHash: hashPassword("password123"),
+        passwordHash: await hashPassword("password123"),
         image: u.image,
         emailVerified: new Date(),
       },
