@@ -17,8 +17,8 @@ export default async function NewPostPage() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-radial from-slate-900 via-zinc-950 to-black px-4 py-12 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
       {/* 背景装飾 */}
-      <div className="absolute top-1/4 left-1/3 -z-10 h-[500px] w-[500px] rounded-full bg-indigo-500/5 blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/3 -z-10 h-[500px] w-[500px] rounded-full bg-emerald-500/5 blur-[120px]" />
+      <div className="absolute top-1/4 left-1/3 -z-10 h-125 w-125 rounded-full bg-indigo-500/5 blur-[120px]" />
+      <div className="absolute bottom-1/4 right-1/3 -z-10 h-125 w-125 rounded-full bg-emerald-500/5 blur-[120px]" />
 
       <div className="z-10 flex w-full max-w-xl flex-col gap-6">
         {/* パンくず / 戻る */}
@@ -37,7 +37,7 @@ export default async function NewPostPage() {
         {/* フォームカード */}
         <div className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">
           <div className="mb-6">
-            <h1 className="text-2xl font-extrabold bg-gradient-to-r from-indigo-200 via-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-extrabold bg-linear-to-r from-indigo-200 via-indigo-400 to-emerald-400 bg-clip-text text-transparent">
               プロダクトを投稿
             </h1>
             <p className="mt-1.5 text-xs text-zinc-400 leading-normal">

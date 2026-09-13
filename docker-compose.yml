@@ -4,11 +4,11 @@ services:
     container_name: engineer-platform-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:?POSTGRES_PORT is required}:5432"
     environment:
-      POSTGRES_USER: engineer-platform
-      POSTGRES_PASSWORD: change_me_to_a_password # ※ローカルLAN内用のパスワードを設定してください
-      POSTGRES_DB: engineer-platform
+      POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER is required}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+      POSTGRES_DB: "${POSTGRES_DB:?POSTGRES_DB is required}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -16,9 +16,9 @@ services:
     image: redis:7-alpine
     container_name: engineer-platform-redis
     restart: unless-stopped
-    command: redis-server --requirepass change_me_to_a_redis_password # ※ローカルLAN用の接続パスワードを設定してください
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:?REDIS_PORT is required}:6379"
     volumes:
       - redis_data:/data
 
@@ -27,11 +27,11 @@ services:
     container_name: engineer-platform-srh
     restart: unless-stopped
     ports:
-      - "8079:80"
+      - "${KV_REST_API_PORT:?KV_REST_API_PORT is required}:80"
     environment:
       SRH_MODE: "env"
-      SRH_CONNECTION_STRING: "redis://default:change_me_to_a_redis_password@redis:6379"
-      SRH_TOKEN: "mock_token"
+      SRH_CONNECTION_STRING: "redis://default:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379"
+      SRH_TOKEN: "${KV_REST_API_TOKEN:?KV_REST_API_TOKEN is required}"
     depends_on:
       - redis
 

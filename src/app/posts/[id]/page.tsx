@@ -52,19 +52,19 @@ export default async function PostDetailPage({ params }: PageProps) {
   const session = await auth();
   const currentUserId = session?.user?.id;
   const isOwner = currentUserId === post.userId;
-  
+
   // 現在のユーザーがいいね済みか確認
-  const isLiked = currentUserId 
-    ? post.likes.some((like) => like.userId === currentUserId) 
+  const isLiked = currentUserId
+    ? post.likes.some((like) => like.userId === currentUserId)
     : false;
-  
+
   const likeCount = post.likes.length;
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-start overflow-x-hidden bg-radial from-slate-900 via-zinc-950 to-black px-4 py-12 text-zinc-100 antialiased selection:bg-indigo-500 selection:text-white">
       {/* 背景装飾 */}
-      <div className="absolute top-1/4 left-1/4 -z-10 h-[500px] w-[500px] rounded-full bg-indigo-500/5 blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/4 -z-10 h-[500px] w-[500px] rounded-full bg-emerald-500/5 blur-[120px]" />
+      <div className="absolute top-1/4 left-1/4 -z-10 h-125 w-125 rounded-full bg-indigo-500/5 blur-[120px]" />
+      <div className="absolute bottom-1/4 right-1/4 -z-10 h-125 w-125 rounded-full bg-emerald-500/5 blur-[120px]" />
 
       <div className="z-10 flex w-full max-w-3xl flex-col gap-6">
         {/* ナビゲーション・戻る */}
@@ -83,15 +83,16 @@ export default async function PostDetailPage({ params }: PageProps) {
           {/* ヘッダーエリア */}
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-white/10 pb-8">
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-200 via-indigo-400 to-emerald-400 bg-clip-text text-transparent truncate pb-1">
+              <h1 className="text-3xl font-extrabold tracking-tight bg-linear-to-r from-indigo-200 via-indigo-400 to-emerald-400 bg-clip-text text-transparent">
                 {post.title}
               </h1>
-              
+
               {/* 作成者情報 & 投稿日 */}
               <div className="flex items-center gap-3 mt-4 text-xs text-zinc-400">
                 {post.user.image ? (
                   <Image
                     src={post.user.image}
+
                     alt={post.user.name || "Creator Avatar"}
                     width={32}
                     height={32}
