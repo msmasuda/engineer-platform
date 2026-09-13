@@ -4,6 +4,9 @@ import { kv } from "@/lib/kv";
 const WINDOW_SECONDS = 15 * 60;
 const ACCOUNT_ATTEMPT_LIMIT = 5;
 const IP_ATTEMPT_LIMIT = 20;
+const PASSWORD_RESET_WINDOW_SECONDS = 60 * 60;
+const PASSWORD_RESET_ACCOUNT_LIMIT = 3;
+const PASSWORD_RESET_IP_LIMIT = 10;
 
 interface AttemptKeys {
   accountKey: string;
@@ -16,13 +19,19 @@ function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function getAttemptKeys(email: string, request: Request): AttemptKeys {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const clientAddress =
-    request.headers.get("x-vercel-forwarded-for") ||
+function getClientAddress(headers: Headers): string {
+  const forwardedFor = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return (
+    headers.get("x-vercel-forwarded-for") ||
     forwardedFor ||
-    request.headers.get("x-real-ip") ||
-    "unknown";
+    headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+function getAttemptKeys(email: string, request: Request): AttemptKeys {
+  const clientAddress =
+    getClientAddress(request.headers);
   const bucket = Math.floor(Date.now() / (WINDOW_SECONDS * 1000));
 
   return {
@@ -62,4 +71,30 @@ export async function clearLoginAttempts(keys: AttemptKeys): Promise<void> {
     kv.zrem(keys.accountKey, keys.accountMember),
     kv.zrem(keys.ipKey, keys.ipMember),
   ]);
+}
+
+export async function registerPasswordResetAttempt(
+  email: string,
+  requestHeaders: Headers,
+): Promise<boolean> {
+  const bucket = Math.floor(
+    Date.now() / (PASSWORD_RESET_WINDOW_SECONDS * 1000),
+  );
+  const accountKey = `rate:password-reset:account:${bucket}`;
+  const ipKey = `rate:password-reset:ip:${bucket}`;
+  const [accountAttempts, ipAttempts] = await Promise.all([
+    kv.zincrby(accountKey, 1, digest(email.trim().toLowerCase())),
+    kv.zincrby(ipKey, 1, digest(getClientAddress(requestHeaders))),
+  ]);
+  await Promise.all([
+    kv.expire(accountKey, PASSWORD_RESET_WINDOW_SECONDS + 60),
+    kv.expire(ipKey, PASSWORD_RESET_WINDOW_SECONDS + 60),
+  ]);
+
+  return (
+    accountAttempts !== null &&
+    ipAttempts !== null &&
+    accountAttempts <= PASSWORD_RESET_ACCOUNT_LIMIT &&
+    ipAttempts <= PASSWORD_RESET_IP_LIMIT
+  );
 }
