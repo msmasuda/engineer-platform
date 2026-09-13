@@ -10,7 +10,7 @@
 - **言語**: TypeScript
 - **DB**: PostgreSQL (Prisma ORM + `@prisma/adapter-pg`)
 - **キャッシュ / ランキング**: Redis (ioredis)
-- **認証**: Auth.js (NextAuth v5) — メール/パスワード・GitHub・Google・Apple
+- **認証**: Auth.js (NextAuth v5) — メール/パスワード・パスワード再設定・GitHub・Google・Apple
 - **メール通知**: Resend
 - **スタイル**: Tailwind CSS v4
 - **デプロイ**: Vercel
@@ -20,7 +20,7 @@
 ### 前提条件
 
 - Node.js 20+
-- Docker（PostgreSQL・Redis の起動に使用）
+- Docker（`192.168.100.2` のDockerホストでPostgreSQL・Redisを起動）
 
 ### 手順
 
@@ -32,11 +32,11 @@ cd engineer-platform
 # 2. 依存パッケージのインストール
 npm install
 
-# 3. 環境変数の設定
-cp .env.example .env.local
-# .env.local を編集して DATABASE_URL・REDIS_URL などを設定
+# 3. 環境変数の設定（Git管理外）
+cp .env.example .env
+# .env のパスワード・トークンを実際の値へ変更
 
-# 4. データベースの起動
+# 4. PostgreSQL・Redis の起動（192.168.100.2 のDockerホストで実行）
 docker compose up -d
 
 # 5. マイグレーションの適用
@@ -50,6 +50,8 @@ npm run dev
 ```
 
 ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
+
+`POSTGRES_PASSWORD` はPostgreSQLボリュームの初回作成時だけ反映されます。既存の `postgres_data` を残したまま値を変更する場合は、DB内のユーザーパスワードも同じ値へ更新してください。
 
 ## 主なコマンド
 
@@ -90,22 +92,28 @@ npm run dev
 - **プロダクト投稿**: タイトル・URL・GitHub URL・説明・技術タグ・AI利用情報を登録
 - **いいね**: 投稿にいいねでき、ランキングに反映
 - **ランキング**: 累計いいね順・週間トレンド順のサイドバー表示
-- **認証**: メール/パスワードによるサインイン（新規登録も同一フォームで完結）
+- **認証**: メール/パスワードによるサインイン（新規登録も同一フォームで完結）・メールによるパスワード再設定
 - **投稿の編集・削除**: 投稿者本人のみ操作可能
 - **コンタクト**: 問い合わせをDBへ保存し、投稿者へメール通知（匿名送信可・レート制限付き）
 
 メール/パスワード認証では、パスワードをscrypt（N=32768、r=8、p=3）で保存します。新規パスワードは15〜128文字です。旧PBKDF2形式のハッシュは、次回のログイン成功時に自動的にscrypt形式へ更新されます。ログイン試行はアカウント単位・IP単位で制限されます。
 
-## コンタクト通知の設定
+## メール送信の設定
 
-投稿者への通知メールにはResendを使用します。Resendで送信ドメインを検証し、次の環境変数を設定してください。
+投稿者へのコンタクト通知とパスワード再設定メールにはResendを使用します。Resendで送信ドメインを検証し、次の環境変数を設定してください。
 
 ```bash
+AUTH_URL="http://localhost:3000"
+PASSWORD_RESET_EMAIL_MODE="resend"
 RESEND_API_KEY="re_..."
 CONTACT_EMAIL_FROM="Engineer Platform <contact@example.com>"
 ```
 
-VercelではResend Marketplace Integrationを利用すると`RESEND_API_KEY`を連携できます。`CONTACT_EMAIL_FROM`にはResendで検証済みのドメインに属する送信元を指定してください。未設定または送信失敗時もコンタクト内容はDBに`FAILED`として保存され、画面には通知失敗が表示されます。
+`AUTH_URL`にはアプリの公開URLを指定します。VercelではResend Marketplace Integrationを利用すると`RESEND_API_KEY`を連携できます。`CONTACT_EMAIL_FROM`にはResendで検証済みのドメインに属する送信元を指定してください。未設定または送信失敗時もコンタクト内容はDBに`FAILED`として保存され、画面には通知失敗が表示されます。
+
+ローカルでResendを使わずにパスワード再設定を確認する場合は、`.env`へ `PASSWORD_RESET_EMAIL_MODE="console"` を設定して開発サーバーを再起動します。再設定を依頼すると、開発サーバーのターミナルへ `[password-reset]` で始まるURLが表示されます。本番環境ではこの値に関係なくResendを使用します。
+
+パスワード再設定リンクは1時間有効で、一度使用すると無効になります。登録されていないメールアドレスやソーシャルログイン専用アカウントへは送信しませんが、アカウントの存在を推測されないよう画面には同じ完了メッセージを表示します。
 
 ## AI選択肢のマスター管理
 

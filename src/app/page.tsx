@@ -230,6 +230,12 @@ export default async function Home(props: { searchParams: Promise<{ error?: stri
                     <p className="text-[9px] text-zinc-500 text-center leading-normal">
                       ※新規登録のパスワードは15〜128文字です。既存アカウントは現在のパスワードでサインインできます。
                     </p>
+                    <Link
+                      href="/forgot-password"
+                      className="text-center text-[10px] font-semibold text-indigo-400 hover:text-indigo-300"
+                    >
+                      パスワードを忘れた方
+                    </Link>
                   </form>
 
                   <div className="relative my-1 flex items-center justify-center">
