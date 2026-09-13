@@ -9,7 +9,7 @@
 - **フレームワーク**: Next.js 16 (App Router)
 - **言語**: TypeScript
 - **DB**: PostgreSQL (Prisma ORM + `@prisma/adapter-pg`)
-- **キャッシュ / ランキング**: Redis (ioredis)
+- **キャッシュ / ランキング**: Redis (`@vercel/kv`、REST API未設定時はioredis)
 - **認証**: Auth.js (NextAuth v5) — メール/パスワード・パスワード再設定・GitHub・Google・Apple
 - **メール通知**: Resend
 - **スタイル**: Tailwind CSS v4
@@ -20,7 +20,7 @@
 ### 前提条件
 
 - Node.js 20+
-- Docker（`192.168.100.2` のDockerホストでPostgreSQL・Redisを起動）
+- Docker（`192.168.100.2` のDockerホストでPostgreSQL・Redis・Redis HTTP APIを起動）
 
 ### 手順
 
@@ -50,6 +50,8 @@ npm run dev
 ```
 
 ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
+
+手順3の `.env` はMac上のアプリが使用します。Dockerホスト側でも `docker-compose.yml` と同じディレクトリへ `.env` を配置し、`POSTGRES_*`・`REDIS_*`・`KV_REST_API_*` を同じ認証情報で設定してください。
 
 `POSTGRES_PASSWORD` はPostgreSQLボリュームの初回作成時だけ反映されます。既存の `postgres_data` を残したまま値を変更する場合は、DB内のユーザーパスワードも同じ値へ更新してください。
 
@@ -111,7 +113,9 @@ CONTACT_EMAIL_FROM="Engineer Platform <contact@example.com>"
 
 `AUTH_URL`にはアプリの公開URLを指定します。VercelではResend Marketplace Integrationを利用すると`RESEND_API_KEY`を連携できます。`CONTACT_EMAIL_FROM`にはResendで検証済みのドメインに属する送信元を指定してください。未設定または送信失敗時もコンタクト内容はDBに`FAILED`として保存され、画面には通知失敗が表示されます。
 
-ローカルでResendを使わずにパスワード再設定を確認する場合は、`.env`へ `PASSWORD_RESET_EMAIL_MODE="console"` を設定して開発サーバーを再起動します。再設定を依頼すると、開発サーバーのターミナルへ `[password-reset]` で始まるURLが表示されます。本番環境ではこの値に関係なくResendを使用します。
+`CONTACT_EMAIL_FROM="Engineer Platform <onboarding@resend.dev>"` はドメイン検証前のテストに使用できますが、送信先はResendアカウント本人のメールアドレスに限られます。任意の宛先へ送るには独自ドメインの検証が必要です。
+
+ローカルでResendを使わずにパスワード再設定を確認する場合は、`.env`へ `PASSWORD_RESET_EMAIL_MODE="console"` を設定して開発サーバーを再起動します。再設定を依頼すると、開発サーバーのターミナルへ `[password-reset]` で始まるURLが表示されます。この設定が対象にするのはパスワード再設定メールだけです。コンタクト通知はローカルでもResendへ送信され、本番環境ではこの値に関係なくパスワード再設定メールもResendへ送信されます。
 
 パスワード再設定リンクは1時間有効で、一度使用すると無効になります。登録されていないメールアドレスやソーシャルログイン専用アカウントへは送信しませんが、アカウントの存在を推測されないよう画面には同じ完了メッセージを表示します。
 
